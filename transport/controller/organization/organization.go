@@ -13,7 +13,7 @@ import (
 
 type createOrgRequest struct {
 	model.Organization
-	adminPvtKey string
+	AdminPvtKey string `json:"adminPvtKey"`
 }
 
 type OrganizationController struct {
@@ -51,12 +51,12 @@ func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 			return
 		}
 
-		if orgReq.adminPvtKey == "" {
+		if orgReq.AdminPvtKey == "" {
 			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
 				Code:    "security/invalid-admin-pvt-key",
 				Message: "Admin Private Key is not valid",
 			})
-			u.logger.WithError(err).Error("invalid admin private key")
+			u.logger.WithField("admin pvt key", orgReq.AdminPvtKey).Error("invalid admin private key")
 			return
 		}
 
@@ -67,7 +67,7 @@ func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 			AsymmKey:     orgReq.AsymmKey,
 		}
 
-		org, err := u.svc.CreateNew(gCtx.Request.Context(), organization, orgReq.adminPvtKey)
+		org, err := u.svc.CreateNew(gCtx.Request.Context(), organization, orgReq.AdminPvtKey)
 
 		if err != nil {
 			if err == errors.ErrInvalidAsymmetricKey {

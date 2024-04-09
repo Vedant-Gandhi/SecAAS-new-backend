@@ -70,14 +70,18 @@ func (o *OrganizationSVC) CreateNew(ctx context.Context, organization model.Orga
 		},
 	}
 
-	_, err = mgm.Coll(userDoc).UpdateOne(ctx, userFilter, userUpdate)
+	updateRes, err := mgm.Coll(userDoc).UpdateOne(ctx, userFilter, userUpdate)
 
 	if err != nil {
 		o.logger.WithContext(ctx).WithField("Admin Email", data.AdminEmail).WithError(err).Error("Failed to add the organization entry in the admin.")
 		err = nil
 	}
 
-	o.logger.WithContext(ctx).WithField("Admin Email", data.AdminEmail).Debug("Added organization to the email.")
+	if updateRes.ModifiedCount == 0 {
+		o.logger.WithContext(ctx).WithField("Admin Email", data.AdminEmail).Print("Could not update the email with organization.")
+	} else {
+		o.logger.WithContext(ctx).WithField("Admin Email", data.AdminEmail).Print("Added organization to the email.")
+	}
 
 	return
 }
