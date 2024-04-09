@@ -11,6 +11,11 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type createOrgRequest struct {
+	model.Organization
+	adminPvtKey string
+}
+
 type OrganizationController struct {
 	logger *logrus.Logger
 	svc    *organization.OrganizationSVC
@@ -24,9 +29,9 @@ func New(svc *organization.OrganizationSVC, logger *logrus.Logger) *Organization
 func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 	return func(gCtx *gin.Context) {
 
-		var organization model.Organization
+		var orgReq createOrgRequest
 
-		err := gCtx.BindJSON(&organization)
+		err := gCtx.BindJSON(&orgReq)
 
 		if err != nil {
 			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
@@ -37,7 +42,7 @@ func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 			return
 		}
 
-		if organization.AdminEmail == "" {
+		if orgReq.AdminEmail == "" {
 			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
 				Code:    "organization/invalid-email",
 				Message: "Organization Email is not valid",
@@ -46,7 +51,14 @@ func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 			return
 		}
 
-		org, err := u.svc.CreateNew(gCtx.Request.Context(), organization)
+		organization := model.Organization{
+			Name:         orgReq.Name,
+			BillingEmail: orgReq.BillingEmail,
+			AdminEmail:   orgReq.AdminEmail,
+			AsymmKey:     orgReq.AsymmKey,
+		}
+
+		org, err := u.svc.CreateNew(gCtx.Request.Context(), organization, orgReq.adminPvtKey)
 
 		if err != nil {
 			if err == errors.ErrInvalidAsymmetricKey {

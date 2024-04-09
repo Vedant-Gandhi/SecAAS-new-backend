@@ -21,7 +21,7 @@ func New(logger *logrus.Logger) *OrganizationSVC {
 	return u
 }
 
-func (o *OrganizationSVC) CreateNew(ctx context.Context, organization model.Organization) (data model.Organization, err error) {
+func (o *OrganizationSVC) CreateNew(ctx context.Context, organization model.Organization, adminPvtKey string) (data model.Organization, err error) {
 
 	if organization.AsymmKey.Alg == "" || organization.AsymmKey.EncryptedPvtKey == "" || organization.AsymmKey.Public == "" {
 		err = errors.ErrInvalidAsymmetricKey
@@ -52,6 +52,32 @@ func (o *OrganizationSVC) CreateNew(ctx context.Context, organization model.Orga
 	}
 
 	data = o.MapDocToOrganization(docOrganization)
+
+	// Add to user doc.
+	userDoc := &doc.User{}
+
+	userFilter := bson.M{
+		"email": organization.AdminEmail,
+	}
+
+	userUpdate := bson.M{
+		"$push": bson.M{
+			"organizations": doc.UserOrganization{
+				ID:      data.ID.String(),
+				IsAdmin: true,
+				PvtKey:  adminPvtKey,
+			},
+		},
+	}
+
+	_, err = mgm.Coll(userDoc).UpdateOne(ctx, userFilter, userUpdate)
+
+	if err != nil {
+		o.logger.WithContext(ctx).WithField("Admin Email", data.AdminEmail).WithError(err).Error("Failed to add the organization entry in the admin.")
+		err = nil
+	}
+
+	o.logger.WithContext(ctx).WithField("Admin Email", data.AdminEmail).Debug("Added organization to the email.")
 
 	return
 }

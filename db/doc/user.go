@@ -9,7 +9,7 @@ import (
 
 type UserOrganization struct {
 	ID      string `bson:"id,omitempty"`
-	IsAdmin string `bson:"isAdmin"`
+	IsAdmin bool   `bson:"isAdmin"`
 	PvtKey  string `bson:"pvtKey, omitempty"`
 }
 
