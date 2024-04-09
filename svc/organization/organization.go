@@ -81,6 +81,30 @@ func (o *OrganizationSVC) DeleteOrganization(ctx context.Context, organizationId
 	}
 
 	deleted = int(res.DeletedCount)
+
+	// Delete all the users related to that organization.
+	docUser := &doc.User{}
+
+	userFilter := bson.M{
+		"organizations.id": organizationId,
+	}
+
+	userUpdate := bson.M{
+		"$pull": bson.M{
+			"organizations": bson.M{
+				"id": organizationId,
+			},
+		},
+	}
+
+	userRes, userErr := mgm.Coll(docUser).UpdateMany(ctx, userFilter, userUpdate)
+
+	if userErr != nil {
+		o.logger.WithContext(ctx).WithError(err).Error("Failed to delete the users associated with organization.")
+	}
+
+	o.logger.WithContext(ctx).WithField("userMatched", userRes.MatchedCount).WithField("userUpdated", userRes.ModifiedCount).Debug("removed organization from users after its deletion.")
+
 	return
 }
 
