@@ -8,6 +8,9 @@ import (
 
 func Add(router *gin.RouterGroup, controller organization.OrganizationController) {
 
-	//user := router.Group("/organizations")
+	organization := router.Group("/organizations")
+
+	organization.POST("/", controller.CreateOrganization())
+	organization.DELETE("/:organizationId", controller.DeleteOrganization())
 
 }
