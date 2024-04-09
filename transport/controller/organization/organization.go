@@ -51,6 +51,15 @@ func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 			return
 		}
 
+		if orgReq.adminPvtKey == "" {
+			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
+				Code:    "security/invalid-admin-pvt-key",
+				Message: "Admin Private Key is not valid",
+			})
+			u.logger.WithError(err).Error("invalid admin private key")
+			return
+		}
+
 		organization := model.Organization{
 			Name:         orgReq.Name,
 			BillingEmail: orgReq.BillingEmail,
