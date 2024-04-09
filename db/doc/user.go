@@ -8,7 +8,7 @@ import (
 )
 
 type UserOrganization struct {
-	ID string
+	ID string `bson:"id,omitempty"`
 }
 
 type User struct {

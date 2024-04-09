@@ -57,3 +57,62 @@ func (u *UserController) GetUserByEmail() gin.HandlerFunc {
 
 	}
 }
+
+func (u *UserController) CreateUser() gin.HandlerFunc {
+	return func(gCtx *gin.Context) {
+
+		var user model.User
+
+		err := gCtx.BindJSON(&user)
+
+		if err != nil {
+			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
+				Code:    "data/invalid-payload",
+				Message: "Payload format is not valid",
+			})
+			u.logger.WithError(err).Error("error in decoding body")
+			return
+		}
+
+		if user.Email == "" {
+			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
+				Code:    "user/invalid-email",
+				Message: "User Email is not valid",
+			})
+			u.logger.WithError(err).Error("invalid email when creating user")
+			return
+		}
+
+		if user.PassHash.Hash == "" || user.PassHash.Alg == "" {
+			u.logger.WithError(err).Error("invalid fields in pass hash found")
+			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
+				Code:    "user/invalid-password",
+				Message: "User Password is not valid",
+			})
+			return
+		}
+
+		id, err := u.svc.CreateUser(gCtx.Request.Context(), user)
+
+		if err != nil {
+			if err == errors.ErrInvalidEmail {
+				gCtx.JSON(http.StatusNotFound, response.ErrorResponse{
+					Code:    "user/invalid-email",
+					Message: "User Email is not Valid.",
+				})
+				return
+			}
+
+			gCtx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Code:    "server/internal-error",
+				Message: "An Internal Server error has occurred",
+			})
+			return
+		}
+
+		user.ID = id
+
+		gCtx.JSON(http.StatusOK, user)
+
+	}
+}

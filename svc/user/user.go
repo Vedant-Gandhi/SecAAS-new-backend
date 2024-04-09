@@ -57,6 +57,51 @@ func (u *UserSVC) GetByEmail(ctx context.Context, email model.Email) (user model
 	return
 }
 
+func (u *UserSVC) CreateUser(ctx context.Context, user model.User) (uId model.UserID, err error) {
+
+	if user.PassHash.Hash == "" || user.PassHash.Alg == "" {
+		err = errors.ErrInvalidPassHash
+		return
+	}
+
+	if user.Email == "" {
+		err = errors.ErrInvalidEmail
+		return
+	}
+	docUser := &doc.User{
+		Name:  user.Name,
+		Email: user.Email,
+		PassHash: doc.PassHash{
+			Hash: user.PassHash.Hash,
+			Alg:  user.PassHash.Alg,
+		},
+		SymKey: doc.SymKey{
+			EncryptedData: user.SymKey.EncryptedData,
+			Alg:           user.SymKey.Alg,
+		},
+		AsymmKey: doc.AsymmKey{
+			EncryptedPvtKey: user.AsymmKey.EncryptedPvtKey,
+			Public:          user.AsymmKey.Public,
+			Alg:             user.AsymmKey.Alg,
+		},
+		IsBlackListed: false,
+		Organization:  []doc.UserOrganization{},
+	}
+
+	err = mgm.Coll(docUser).CreateWithCtx(ctx, docUser)
+	u.logger.Error("received in body")
+
+	if err != nil {
+		u.logger.WithError(err).Error("error while creating a new user")
+		err = errors.ErrUnknown
+		return
+	}
+
+	uId = model.UserID(docUser.ID.Hex())
+
+	return
+}
+
 func (u *UserSVC) MapDocToUser(userDoc *doc.User) model.User {
 	user := model.User{
 		ID:            model.UserID(userDoc.ID.Hex()),
