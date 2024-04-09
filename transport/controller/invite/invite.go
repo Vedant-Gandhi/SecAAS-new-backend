@@ -205,3 +205,39 @@ func (i *InviteController) GetForUser() gin.HandlerFunc {
 
 	}
 }
+
+func (i *InviteController) DeleteInvite() gin.HandlerFunc {
+	return func(gCtx *gin.Context) {
+
+		inviteId := gCtx.Param("inviteId")
+
+		if inviteId == "" {
+			err := response.ErrorResponse{
+				Code:    "invite/invalid-id",
+				Message: "Invite ID is not valid",
+			}
+			gCtx.JSON(http.StatusBadRequest, err)
+			return
+		}
+
+		deleteCount, err := i.svc.DeleteInvite(gCtx.Request.Context(), inviteId)
+
+		if err != nil {
+			gCtx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Code:    "server/internal-error",
+				Message: "An Internal Server error has occurred",
+			})
+			return
+		}
+
+		if deleteCount > 0 {
+			inviteId = ""
+		}
+
+		gCtx.JSON(http.StatusOK, gin.H{
+			"deleted": deleteCount > 0,
+			"id":      inviteId,
+		})
+
+	}
+}

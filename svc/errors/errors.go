@@ -9,4 +9,6 @@ var (
 	ErrUnknown = errors.New("an unknown error has occurred")
 
 	ErrInvalidPassHash = errors.New("password hash is not valid")
+
+	ErrInvalidID = errors.New("ID is not valid")
 )

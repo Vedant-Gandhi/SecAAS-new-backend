@@ -10,6 +10,7 @@ import (
 	"github.com/kamva/mgm/v3"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
@@ -138,6 +139,33 @@ func (s *InviteSVC) GetInvitesForUser(ctx context.Context, receiverEmail string,
 	}
 
 	return docs, nil
+}
+
+func (s *InviteSVC) DeleteInvite(ctx context.Context, inviteId string) (int, error) {
+	objId, err := primitive.ObjectIDFromHex(inviteId)
+
+	if err != nil {
+		s.logger.WithContext(ctx).WithError(err).Error("Invalid invite id found")
+		err = errors.ErrInvalidID
+		return 0, err
+	}
+
+	inviteDoc := doc.Invite{}
+
+	filter := bson.M{
+		"_id": objId,
+	}
+
+	res, err := mgm.Coll(&inviteDoc).DeleteOne(ctx, filter)
+
+	if err != nil {
+		s.logger.WithContext(ctx).WithError(err).Error("Error while deleteing invitation")
+		err = errors.ErrUnknown
+		return 0, err
+	}
+
+	return int(res.DeletedCount), nil
+
 }
 
 func (u *InviteSVC) MapDocToInvite(userInvite *doc.Invite) model.Invite {
