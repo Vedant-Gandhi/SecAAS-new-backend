@@ -2,6 +2,7 @@ package router
 
 import (
 	"secaas_backend/transport/controller"
+	"secaas_backend/transport/router/invite"
 	"secaas_backend/transport/router/user"
 
 	"github.com/gin-gonic/gin"
@@ -20,6 +21,7 @@ func Init(logger *logrus.Logger, c *controller.Controller) (*httpRouter, error) 
 	apiV1 := gr.Group("/api/v1")
 
 	user.Add(apiV1, *c.User)
+	invite.Add(apiV1, *c.Invite)
 
 	r := &httpRouter{logger: logger, Router: gr, controller: c}
 

@@ -92,7 +92,7 @@ func (u *UserController) CreateUser() gin.HandlerFunc {
 			return
 		}
 
-		id, err := u.svc.CreateUser(gCtx.Request.Context(), user)
+		newUser, err := u.svc.CreateUser(gCtx.Request.Context(), user)
 
 		if err != nil {
 			if err == errors.ErrInvalidEmail {
@@ -110,9 +110,7 @@ func (u *UserController) CreateUser() gin.HandlerFunc {
 			return
 		}
 
-		user.ID = id
-
-		gCtx.JSON(http.StatusOK, user)
+		gCtx.JSON(http.StatusCreated, newUser)
 
 	}
 }

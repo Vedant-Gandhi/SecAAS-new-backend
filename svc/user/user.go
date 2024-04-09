@@ -57,7 +57,7 @@ func (u *UserSVC) GetByEmail(ctx context.Context, email model.Email) (user model
 	return
 }
 
-func (u *UserSVC) CreateUser(ctx context.Context, user model.User) (uId model.UserID, err error) {
+func (u *UserSVC) CreateUser(ctx context.Context, user model.User) (data model.User, err error) {
 
 	if user.PassHash.Hash == "" || user.PassHash.Alg == "" {
 		err = errors.ErrInvalidPassHash
@@ -89,7 +89,6 @@ func (u *UserSVC) CreateUser(ctx context.Context, user model.User) (uId model.Us
 	}
 
 	err = mgm.Coll(docUser).CreateWithCtx(ctx, docUser)
-	u.logger.Error("received in body")
 
 	if err != nil {
 		u.logger.WithError(err).Error("error while creating a new user")
@@ -97,7 +96,7 @@ func (u *UserSVC) CreateUser(ctx context.Context, user model.User) (uId model.Us
 		return
 	}
 
-	uId = model.UserID(docUser.ID.Hex())
+	data = u.MapDocToUser(docUser)
 
 	return
 }
