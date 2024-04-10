@@ -10,7 +10,7 @@ func Add(router *gin.RouterGroup, controller organization.OrganizationController
 
 	organization := router.Group("/organizations")
 
-	organization.POST("/", controller.CreateOrganization())
+	organization.POST("", controller.CreateOrganization())
 	organization.DELETE("/:organizationId", controller.DeleteOrganization())
 
 	organization.GET("/user/:userId", controller.GetOrganizationsForUser())

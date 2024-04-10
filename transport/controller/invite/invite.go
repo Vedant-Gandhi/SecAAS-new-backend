@@ -12,6 +12,9 @@ import (
 	"github.com/sirupsen/logrus"
 )
 
+type acceptInviteReq struct {
+}
+
 type InviteController struct {
 	logger *logrus.Logger
 	svc    *invite.InviteSVC

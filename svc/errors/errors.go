@@ -12,4 +12,6 @@ var (
 	ErrInvalidAsymmetricKey = errors.New("Asymmetric Key is not valid")
 
 	ErrInvalidID = errors.New("ID is not valid")
+
+	ErrInvalidOrganizationID = errors.New("Orgnization ID is not valid")
 )

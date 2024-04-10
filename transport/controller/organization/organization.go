@@ -1,6 +1,7 @@
 package organization
 
 import (
+	"fmt"
 	"net/http"
 	"secaas_backend/model"
 	"secaas_backend/svc/errors"
@@ -30,6 +31,8 @@ func New(svc *organization.OrganizationSVC, userSvc *user.UserSVC, logger *logru
 
 func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 	return func(gCtx *gin.Context) {
+
+		fmt.Print("Received request in organization create")
 
 		var orgReq createOrgRequest
 
@@ -96,6 +99,7 @@ func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 			return
 		}
 
+		fmt.Printf("%v", org)
 		gCtx.JSON(http.StatusCreated, org)
 
 	}
