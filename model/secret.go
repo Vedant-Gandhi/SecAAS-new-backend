@@ -18,6 +18,6 @@ type Secret struct {
 	Tags          []string   `json:"tags"`
 	CreatorEmail  string     `json:"creatorEmail"`
 	Type          string     `json:"type"`
-	ReferenceKey  string     `json:"referenceKey,omitempty"`
+	ReferenceKey  string     `json:"referenceKey"`
 	ExpiresAt     time.Time  `json:"expiresAt,omitempty"`
 }

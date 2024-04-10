@@ -5,6 +5,7 @@ import (
 	"secaas_backend/transport/middleware"
 	"secaas_backend/transport/router/invite"
 	"secaas_backend/transport/router/organization"
+	"secaas_backend/transport/router/secret"
 	"secaas_backend/transport/router/user"
 
 	"github.com/gin-gonic/gin"
@@ -27,6 +28,7 @@ func Init(logger *logrus.Logger, c *controller.Controller) (*httpRouter, error) 
 	user.Add(apiV1, *c.User)
 	invite.Add(apiV1, *c.Invite)
 	organization.Add(apiV1, *c.Organization)
+	secret.Add(apiV1, *c.Secrets)
 
 	r := &httpRouter{logger: logger, Router: gr, controller: c}
 

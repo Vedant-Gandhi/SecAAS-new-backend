@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/kamva/mgm/v3"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type SecretUser struct {
@@ -13,13 +14,13 @@ type SecretUser struct {
 
 type Secret struct {
 	mgm.DefaultModel `bson:",inline"`
-	EncryptedData    string     `bson:"encryptedData,omitempty"`
-	User             SecretUser `bson:"user,omitempty"`
-	Name             string     `bson:"name,omitempty"`
-	Description      string     `bson:"description,omitempty"`
-	Tags             []string   `bson:"tags,omitempty"`
-	CreatorEmail     string     `bson:"creatorEmail,omitempty"`
-	Type             string     `bson:"type,omitempty"`
-	ReferenceKey     string     `bson:"referenceKey,omitempty"`
-	ExpiresAt        time.Time  `bson:"expiresAt,omitempty"`
+	EncryptedData    string             `bson:"encryptedData,omitempty"`
+	User             SecretUser         `bson:"user,omitempty"`
+	Name             string             `bson:"name,omitempty"`
+	Description      string             `bson:"description,omitempty"`
+	Tags             []string           `bson:"tags,omitempty"`
+	CreatorEmail     string             `bson:"creatorEmail,omitempty"`
+	Type             string             `bson:"type,omitempty"`
+	ReferenceKey     primitive.ObjectID `bson:"referenceKey,omitempty"`
+	ExpiresAt        time.Time          `bson:"expiresAt,omitempty"`
 }

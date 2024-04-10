@@ -95,6 +95,8 @@ func (s *InviteSVC) GetInvitesByOrganization(ctx context.Context, orgId string, 
 
 	}
 
+	s.DeleteInvite(ctx, inviteDoc.ID.Hex())
+
 	return docs, nil
 }
 
