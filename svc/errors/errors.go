@@ -10,6 +10,7 @@ var (
 
 	ErrInvalidPassHash      = errors.New("password hash is not valid")
 	ErrInvalidAsymmetricKey = errors.New("Asymmetric Key is not valid")
+	ErrInvalidSymmetricKey  = errors.New("Symmetric Key is not valid")
 
 	ErrInvalidID = errors.New("ID is not valid")
 

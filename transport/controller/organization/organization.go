@@ -34,7 +34,7 @@ func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 
 		fmt.Print("Received request in organization create")
 
-		var orgReq createOrgRequest
+		var orgReq model.Organization
 
 		err := gCtx.BindJSON(&orgReq)
 
@@ -56,23 +56,14 @@ func (u *OrganizationController) CreateOrganization() gin.HandlerFunc {
 			return
 		}
 
-		if orgReq.AdminPvtKey == "" {
-			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
-				Code:    "security/invalid-admin-pvt-key",
-				Message: "Admin Private Key is not valid",
-			})
-			u.logger.WithField("admin pvt key", orgReq.AdminPvtKey).Error("invalid admin private key")
-			return
-		}
-
 		organization := model.Organization{
 			Name:         orgReq.Name,
 			BillingEmail: orgReq.BillingEmail,
 			AdminEmail:   orgReq.AdminEmail,
-			AsymmKey:     orgReq.AsymmKey,
+			SymmKey:      orgReq.SymmKey,
 		}
 
-		org, err := u.svc.CreateNew(gCtx.Request.Context(), organization, orgReq.AdminPvtKey)
+		org, err := u.svc.CreateNew(gCtx.Request.Context(), organization)
 
 		if err != nil {
 			if err == errors.ErrInvalidAsymmetricKey {

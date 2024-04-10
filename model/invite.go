@@ -16,4 +16,5 @@ type Invite struct {
 	FromUserEmail  string    `json:"fromUserEmail"`
 	ToUserEmail    string    `json:"toUserEmail"`
 	OrganizationID string    `json:"organizationId"`
+	SymKey         SymKey    `json:"symKey"`
 }

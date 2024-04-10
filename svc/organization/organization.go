@@ -21,10 +21,10 @@ func New(logger *logrus.Logger) *OrganizationSVC {
 	return u
 }
 
-func (o *OrganizationSVC) CreateNew(ctx context.Context, organization model.Organization, adminPvtKey string) (data model.Organization, err error) {
+func (o *OrganizationSVC) CreateNew(ctx context.Context, organization model.Organization) (data model.Organization, err error) {
 
-	if organization.AsymmKey.Alg == "" || organization.AsymmKey.EncryptedPvtKey == "" || organization.AsymmKey.Public == "" {
-		err = errors.ErrInvalidAsymmetricKey
+	if organization.SymmKey.Alg == "" || organization.SymmKey.EncryptedData == "" {
+		err = errors.ErrInvalidSymmetricKey
 		return
 	}
 
@@ -36,10 +36,9 @@ func (o *OrganizationSVC) CreateNew(ctx context.Context, organization model.Orga
 		Name:         organization.Name,
 		BillingEmail: organization.BillingEmail,
 		AdminEmail:   organization.AdminEmail,
-		AsymmKey: doc.AsymmKey{
-			Public:          organization.AsymmKey.Public,
-			EncryptedPvtKey: organization.AsymmKey.EncryptedPvtKey,
-			Alg:             organization.AsymmKey.Alg,
+		SymmKey: doc.SymKey{
+			EncryptedData: organization.SymmKey.EncryptedData,
+			Alg:           organization.SymmKey.Alg,
 		},
 	}
 
@@ -65,7 +64,7 @@ func (o *OrganizationSVC) CreateNew(ctx context.Context, organization model.Orga
 			"organizations": doc.UserOrganization{
 				ID:      data.ID.String(),
 				IsAdmin: true,
-				PvtKey:  adminPvtKey,
+				PvtKey:  docOrganization.SymmKey.EncryptedData,
 			},
 		},
 	}
@@ -203,10 +202,9 @@ func (o *OrganizationSVC) MapDocToOrganization(docOrg *doc.Organization) model.O
 		Name:         docOrg.Name,
 		BillingEmail: docOrg.BillingEmail,
 		AdminEmail:   docOrg.AdminEmail,
-		AsymmKey: model.AsymmKey{
-			Public:          docOrg.AsymmKey.Public,
-			EncryptedPvtKey: docOrg.AsymmKey.EncryptedPvtKey,
-			Alg:             docOrg.AsymmKey.Alg,
+		SymmKey: model.SymKey{
+			EncryptedData: docOrg.SymmKey.EncryptedData,
+			Alg:           docOrg.SymmKey.Alg,
 		},
 	}
 

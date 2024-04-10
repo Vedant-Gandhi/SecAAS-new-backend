@@ -13,5 +13,5 @@ type Organization struct {
 	Name         string         `json:"name"`
 	BillingEmail string         `json:"billingEmail"`
 	AdminEmail   string         `json:"adminEmail"`
-	AsymmKey     AsymmKey       `json:"asymmKey"`
+	SymmKey      SymKey         `json:"symKey"`
 }

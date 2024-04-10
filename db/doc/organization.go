@@ -11,7 +11,7 @@ type Organization struct {
 	Name             string    `bson:"name,omitempty"`
 	BillingEmail     string    `bson:"billingEmail,omitempty"`
 	AdminEmail       string    `bson:"adminEmail,omitempty"`
-	AsymmKey         AsymmKey  `bson:"asymmKey,omitempty"`
+	SymmKey          SymKey    `bson:"symKey,omitempty"`
 	SoftDelete       bool      `bson:"softDelete,omitempty"`
 	DeleteTimeStamp  time.Time `bson:"deleteTs,omitempty"`
 }
