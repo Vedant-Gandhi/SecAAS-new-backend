@@ -5,6 +5,7 @@ import (
 	"secaas_backend/model"
 	"secaas_backend/svc/errors"
 	"secaas_backend/svc/organization"
+	"secaas_backend/svc/user"
 	"secaas_backend/transport/controller/response"
 
 	"github.com/gin-gonic/gin"
@@ -17,12 +18,13 @@ type createOrgRequest struct {
 }
 
 type OrganizationController struct {
-	logger *logrus.Logger
-	svc    *organization.OrganizationSVC
+	logger  *logrus.Logger
+	svc     *organization.OrganizationSVC
+	userSvc *user.UserSVC
 }
 
-func New(svc *organization.OrganizationSVC, logger *logrus.Logger) *OrganizationController {
-	uc := &OrganizationController{logger: logger, svc: svc}
+func New(svc *organization.OrganizationSVC, userSvc *user.UserSVC, logger *logrus.Logger) *OrganizationController {
+	uc := &OrganizationController{logger: logger, svc: svc, userSvc: userSvc}
 	return uc
 }
 
@@ -131,6 +133,51 @@ func (o *OrganizationController) DeleteOrganization() gin.HandlerFunc {
 			"deleted": deleteCount > 0,
 			"id":      organizationId,
 		})
+
+	}
+}
+
+func (u *OrganizationController) GetOrganizationsForUser() gin.HandlerFunc {
+	return func(gCtx *gin.Context) {
+
+		userId := gCtx.Param("userId")
+
+		user, err := u.userSvc.GetByID(gCtx.Request.Context(), model.UserID(userId))
+
+		if err != nil {
+			if err == errors.ErrUserNotFound {
+				gCtx.JSON(http.StatusNotFound, response.ErrorResponse{
+					Code:    "user/not-found",
+					Message: "User not found",
+				})
+				return
+			}
+			gCtx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Code:    "server/internal-error",
+				Message: "An Internal Server error has occurred",
+			})
+			return
+		}
+
+		organizations := []model.OrganizationID{}
+
+		for _, org := range user.Organization {
+			if org.ID != "" {
+				organizations = append(organizations, model.OrganizationID(org.ID))
+			}
+		}
+
+		data, err := u.svc.GetOrganizationList(gCtx.Request.Context(), organizations)
+
+		if err != nil {
+			gCtx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Code:    "server/internal-error",
+				Message: "An Internal Server error has occurred",
+			})
+			return
+		}
+
+		gCtx.JSON(http.StatusOK, data)
 
 	}
 }

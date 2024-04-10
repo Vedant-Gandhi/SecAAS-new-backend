@@ -21,7 +21,7 @@ type Controller struct {
 func New(logger *logrus.Logger, svc *svc.SVC) *Controller {
 	u := user.New(svc.User, logger)
 	i := invite.New(svc.Invite, logger)
-	o := organization.New(svc.Organization, logger)
+	o := organization.New(svc.Organization, svc.User, logger)
 
 	c := &Controller{logger: logger, svc: svc, User: u, Invite: i, Organization: o}
 	return c

@@ -10,6 +10,7 @@ import (
 	"github.com/kamva/mgm/v3"
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 type UserSVC struct {
@@ -97,6 +98,44 @@ func (u *UserSVC) CreateUser(ctx context.Context, user model.User) (data model.U
 	}
 
 	data = u.MapDocToUser(docUser)
+
+	return
+}
+
+func (u *UserSVC) GetByID(ctx context.Context, id model.UserID) (user model.User, err error) {
+	log := u.logger.WithContext(ctx)
+
+	if id == "" {
+		log.Error("invalid email")
+		err = errors.ErrInvalidEmail
+		return
+	}
+
+	objId, _ := primitive.ObjectIDFromHex(id.String())
+
+	userDoc := &doc.User{}
+
+	coll := mgm.Coll(userDoc)
+
+	filter := bson.M{
+		"_id": objId,
+	}
+
+	err = coll.First(filter, userDoc)
+
+	if err != nil {
+
+		if strings.Contains(err.Error(), "no documents") {
+			log.WithError(err).Error("User not found.")
+			err = errors.ErrUserNotFound
+			return
+		}
+		log.WithError(err).Error("Unknown error occured when finding user by id.")
+		err = errors.ErrUnknown
+		return
+	}
+
+	user = u.MapDocToUser(userDoc)
 
 	return
 }

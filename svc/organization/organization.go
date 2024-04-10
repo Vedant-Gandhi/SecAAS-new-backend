@@ -138,6 +138,63 @@ func (o *OrganizationSVC) DeleteOrganization(ctx context.Context, organizationId
 	return
 }
 
+func (o *OrganizationSVC) GetOrganizationList(ctx context.Context, organizationIds []model.OrganizationID) (orgs []model.Organization, err error) {
+
+	organizationObjIds := []primitive.ObjectID{}
+
+	for _, orgId := range organizationIds {
+		if orgId != "" {
+			objId, err := primitive.ObjectIDFromHex(orgId.String())
+
+			if err != nil {
+				o.logger.WithContext(ctx).WithField("Organization ID", orgId).WithError(err).Error("Object ID for organization get is not valid")
+				continue
+			}
+
+			organizationObjIds = append(organizationObjIds, objId)
+		}
+
+	}
+
+	filter := bson.M{
+		"_id": bson.M{
+			"$in": organizationObjIds,
+		},
+	}
+
+	docOrg := &doc.Organization{}
+
+	res, err := mgm.Coll(docOrg).Find(ctx, filter)
+
+	if err != nil {
+		o.logger.WithContext(ctx).WithError(err).Error("error while fetching list of organizations")
+		err = errors.ErrUnknown
+		return
+	}
+
+	defer res.Close(ctx)
+
+	mappedOrgs := []model.Organization{}
+
+	for res.Next(ctx) {
+		var curDoc doc.Organization
+
+		err = res.Decode(&curDoc)
+
+		if err != nil {
+			o.logger.WithContext(ctx).WithError(err).Error("error while decoding organisation from doc in get organisations")
+			err = nil
+			continue
+		}
+
+		mappedOrgs = append(mappedOrgs, o.MapDocToOrganization(&curDoc))
+	}
+
+	orgs = mappedOrgs
+
+	return
+}
+
 func (o *OrganizationSVC) MapDocToOrganization(docOrg *doc.Organization) model.Organization {
 	org := model.Organization{
 		ID:           model.OrganizationID(docOrg.ID.Hex()),

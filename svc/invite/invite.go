@@ -130,6 +130,7 @@ func (s *InviteSVC) GetInvitesForUser(ctx context.Context, receiverEmail string,
 
 		if err != nil {
 			s.logger.WithContext(ctx).WithError(err).Error("error while decoding invite doc for user.")
+			err = nil
 			continue
 		}
 

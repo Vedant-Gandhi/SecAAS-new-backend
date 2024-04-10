@@ -13,4 +13,6 @@ func Add(router *gin.RouterGroup, controller organization.OrganizationController
 	organization.POST("/", controller.CreateOrganization())
 	organization.DELETE("/:organizationId", controller.DeleteOrganization())
 
+	organization.GET("/user/:userId", controller.GetOrganizationsForUser())
+
 }
