@@ -30,6 +30,10 @@ func (s *InviteSVC) CreateInvite(ctx context.Context, data model.Invite) (model.
 		OrganizationID: data.OrganizationID,
 		ExpiresAt:      time.Now(),
 		ToUserEmail:    data.ToUserEmail,
+		SymKey: doc.SymKey{
+			EncryptedData: data.SymKey.EncryptedData,
+			Alg:           data.SymKey.Alg,
+		},
 	}
 
 	err := mgm.Coll(docInvite).CreateWithCtx(ctx, docInvite)
@@ -178,6 +182,7 @@ func (u *InviteSVC) MapDocToInvite(userInvite *doc.Invite) model.Invite {
 		FromUserEmail:  userInvite.FromUserEmail,
 		ToUserEmail:    userInvite.ToUserEmail,
 		OrganizationID: userInvite.OrganizationID,
+		SymKey:         model.SymKey(userInvite.SymKey),
 	}
 
 	return user
