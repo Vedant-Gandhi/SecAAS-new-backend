@@ -22,5 +22,6 @@ type Secret struct {
 	CreatorEmail     string             `bson:"creatorEmail,omitempty"`
 	Type             string             `bson:"type,omitempty"`
 	ReferenceKey     primitive.ObjectID `bson:"referenceKey,omitempty"`
+	OrganizationID   string             `bson:"organizationId"`
 	ExpiresAt        time.Time          `bson:"expiresAt,omitempty"`
 }

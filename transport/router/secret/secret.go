@@ -10,6 +10,9 @@ func Add(router *gin.RouterGroup, controller secret.SecretsController) {
 
 	secret := router.Group("/secrets")
 
-	secret.POST("", controller.CreateUser())
+	secret.POST("", controller.Create())
+
+	secret.GET("/organization/:organizationId/user/:userId", controller.GetForUserOrganization())
+	secret.GET("/organization/:organizationId", controller.GetForOrganization())
 
 }

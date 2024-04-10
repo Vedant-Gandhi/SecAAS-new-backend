@@ -9,12 +9,13 @@ func (i InviteID) String() string {
 }
 
 type Invite struct {
-	ID             InviteID  `json:"id"`
-	CreatedAt      time.Time `json:"createdAt"`
-	ExpiresAt      time.Time `json:"expiresAt"`
-	UpdatedAt      time.Time `json:"updatedAt"`
-	FromUserEmail  string    `json:"fromUserEmail"`
-	ToUserEmail    string    `json:"toUserEmail"`
-	OrganizationID string    `json:"organizationId"`
-	SymKey         SymKey    `json:"symKey"`
+	ID               InviteID  `json:"id"`
+	CreatedAt        time.Time `json:"createdAt"`
+	ExpiresAt        time.Time `json:"expiresAt"`
+	UpdatedAt        time.Time `json:"updatedAt"`
+	FromUserEmail    string    `json:"fromUserEmail"`
+	ToUserEmail      string    `json:"toUserEmail"`
+	OrganizationID   string    `json:"organizationId"`
+	OrganizationName string    `json:"organizationName"`
+	SymKey           SymKey    `json:"symKey"`
 }

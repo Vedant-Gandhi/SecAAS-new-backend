@@ -65,7 +65,7 @@ func (s *InviteSVC) GetInvitesByOrganization(ctx context.Context, orgId string, 
 	coll := mgm.Coll(inviteDoc)
 
 	findOptions := options.Find().SetSkip(int64(params.Skip)).SetLimit(int64(params.Limit)).SetSort(bson.D{
-		{"createdAt", 1},
+		{"createdAt", -1},
 	})
 
 	rawDocs, err := coll.Find(ctx, filter, findOptions)
@@ -115,7 +115,7 @@ func (s *InviteSVC) GetInvitesForUser(ctx context.Context, receiverEmail string,
 	coll := mgm.Coll(inviteDoc)
 
 	findOptions := options.Find().SetSkip(int64(params.Skip)).SetLimit(int64(params.Limit)).SetSort(bson.D{
-		{"updatedAt", 1},
+		{"updatedAt", -1},
 	})
 
 	rawDocs, err := coll.Find(ctx, filter, findOptions)
@@ -241,14 +241,15 @@ func (i *InviteSVC) AcceptInvite(ctx context.Context, inviteId string) (err erro
 
 func (u *InviteSVC) MapDocToInvite(userInvite *doc.Invite) model.Invite {
 	user := model.Invite{
-		ID:             model.InviteID(userInvite.ID.Hex()),
-		CreatedAt:      userInvite.CreatedAt,
-		ExpiresAt:      userInvite.ExpiresAt,
-		UpdatedAt:      userInvite.UpdatedAt,
-		FromUserEmail:  userInvite.FromUserEmail,
-		ToUserEmail:    userInvite.ToUserEmail,
-		OrganizationID: userInvite.OrganizationID,
-		SymKey:         model.SymKey(userInvite.SymKey),
+		ID:               model.InviteID(userInvite.ID.Hex()),
+		CreatedAt:        userInvite.CreatedAt,
+		ExpiresAt:        userInvite.ExpiresAt,
+		UpdatedAt:        userInvite.UpdatedAt,
+		FromUserEmail:    userInvite.FromUserEmail,
+		ToUserEmail:      userInvite.ToUserEmail,
+		OrganizationID:   userInvite.OrganizationID,
+		OrganizationName: userInvite.OrganizationName,
+		SymKey:           model.SymKey(userInvite.SymKey),
 	}
 
 	return user
