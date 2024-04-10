@@ -3,8 +3,9 @@ package errors
 import "errors"
 
 var (
-	ErrInvalidEmail = errors.New("invalid user email found")
-	ErrUserNotFound = errors.New("user not found")
+	ErrInvalidEmail   = errors.New("invalid user email found")
+	ErrUserNotFound   = errors.New("user not found")
+	ErrInviteNotFound = errors.New("invite not found")
 
 	ErrUnknown = errors.New("an unknown error has occurred")
 

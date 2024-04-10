@@ -4,6 +4,7 @@ import (
 	"math"
 	"net/http"
 	"secaas_backend/model"
+	"secaas_backend/svc/errors"
 	"secaas_backend/svc/invite"
 	"secaas_backend/transport/controller/response"
 	"strconv"
@@ -241,6 +242,55 @@ func (i *InviteController) DeleteInvite() gin.HandlerFunc {
 			"deleted": deleteCount > 0,
 			"id":      inviteId,
 		})
+
+	}
+}
+
+func (i *InviteController) AcceptInvite() gin.HandlerFunc {
+	return func(gCtx *gin.Context) {
+
+		inviteId := gCtx.Param("inviteId")
+
+		if inviteId == "" {
+			err := response.ErrorResponse{
+				Code:    "invite/invalid-id",
+				Message: "Invite ID is not valid",
+			}
+			gCtx.JSON(http.StatusBadRequest, err)
+			return
+		}
+
+		err := i.svc.AcceptInvite(gCtx.Request.Context(), inviteId)
+
+		if err != nil {
+			if err == errors.ErrInviteNotFound {
+				err := response.ErrorResponse{
+					Code:    "invite/not-found",
+					Message: "Invite not found.",
+				}
+				gCtx.JSON(http.StatusBadRequest, err)
+				return
+			}
+
+			if err == errors.ErrInvalidID {
+				err := response.ErrorResponse{
+					Code:    "invite/invalid-id",
+					Message: "Invite ID is not valid.",
+				}
+				gCtx.JSON(http.StatusBadRequest, err)
+				return
+			}
+
+			err := response.ErrorResponse{
+				Code:    "server/internal-error",
+				Message: "Internal server error has ocurred.",
+			}
+			gCtx.JSON(http.StatusInternalServerError, err)
+			return
+
+		}
+
+		gCtx.JSON(http.StatusOK, gin.H{})
 
 	}
 }

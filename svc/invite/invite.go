@@ -5,6 +5,7 @@ import (
 	"secaas_backend/db/doc"
 	"secaas_backend/model"
 	"secaas_backend/svc/errors"
+	"strings"
 	"time"
 
 	"github.com/kamva/mgm/v3"
@@ -28,7 +29,7 @@ func (s *InviteSVC) CreateInvite(ctx context.Context, data model.Invite) (model.
 	docInvite := &doc.Invite{
 		FromUserEmail:  data.FromUserEmail,
 		OrganizationID: data.OrganizationID,
-		ExpiresAt:      time.Now(),
+		ExpiresAt:      data.ExpiresAt,
 		ToUserEmail:    data.ToUserEmail,
 		SymKey: doc.SymKey{
 			EncryptedData: data.SymKey.EncryptedData,
@@ -170,6 +171,69 @@ func (s *InviteSVC) DeleteInvite(ctx context.Context, inviteId string) (int, err
 	}
 
 	return int(res.DeletedCount), nil
+
+}
+
+func (i *InviteSVC) AcceptInvite(ctx context.Context, inviteId string) (err error) {
+	docInvite := &doc.Invite{}
+
+	objId, err := primitive.ObjectIDFromHex(inviteId)
+
+	if err != nil {
+		i.logger.WithContext(ctx).WithError(err).Error("failed to convert invite id to object id")
+		err = errors.ErrInvalidID
+		return
+	}
+
+	filter := bson.M{
+		"_id":       objId,
+		"expiresAt": bson.M{"$gt": time.Now()},
+	}
+
+	err = mgm.Coll(docInvite).First(filter, docInvite)
+
+	if err != nil {
+
+		if strings.Contains(err.Error(), "no documents") {
+			i.logger.WithContext(ctx).WithError(err).Error("Invite not found.")
+			err = errors.ErrInviteNotFound
+			return
+		}
+		i.logger.WithContext(ctx).WithError(err).Error("Error while accepting invitation")
+		err = errors.ErrUnknown
+		return
+	}
+
+	userDoc := &doc.User{}
+
+	userFilter := bson.M{
+		"email": docInvite.ToUserEmail,
+	}
+
+	userUpdate := bson.M{
+		"$push": bson.M{
+			"organizations": doc.UserOrganization{
+				ID:      docInvite.OrganizationID,
+				IsAdmin: false,
+				PvtKey:  docInvite.SymKey.EncryptedData,
+			},
+		},
+	}
+
+	updateRes, err := mgm.Coll(userDoc).UpdateOne(ctx, userFilter, userUpdate)
+
+	if err != nil {
+		i.logger.WithContext(ctx).WithField("To Email", docInvite.ToUserEmail).WithError(err).Error("Failed to add the organization entry in the admin when accepting invite.")
+		err = nil
+	}
+
+	if updateRes.ModifiedCount == 0 {
+		i.logger.WithContext(ctx).WithField("To Email", docInvite.ToUserEmail).Print("Could not update the email with organization when accepting invite.")
+	} else {
+		i.logger.WithContext(ctx).WithField("To Email", docInvite.ToUserEmail).Print("Added organization to the email when accepting invite.")
+	}
+
+	return
 
 }
 
