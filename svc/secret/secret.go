@@ -5,6 +5,7 @@ import (
 	"secaas_backend/db/doc"
 	"secaas_backend/model"
 	"secaas_backend/svc/errors"
+	"secaas_backend/svc/user"
 
 	"github.com/kamva/mgm/v3"
 	"github.com/sirupsen/logrus"
@@ -14,11 +15,12 @@ import (
 )
 
 type SecretsSVC struct {
-	logger *logrus.Logger
+	logger  *logrus.Logger
+	userSvc *user.UserSVC
 }
 
-func New(logger *logrus.Logger) *SecretsSVC {
-	u := &SecretsSVC{logger: logger}
+func New(logger *logrus.Logger, userSvc *user.UserSVC) *SecretsSVC {
+	u := &SecretsSVC{logger: logger, userSvc: userSvc}
 	return u
 }
 func (s *SecretsSVC) GetListForUser(ctx context.Context, userId model.UserID, organizationId string, params model.PaginationParams) (sec model.Secret, err error) {
@@ -39,7 +41,7 @@ func (s *SecretsSVC) GetListForUser(ctx context.Context, userId model.UserID, or
 }
 
 func (s *SecretsSVC) Create(ctx context.Context, data model.Secret) (sec model.Secret, err error) {
-	objRefId, _ := primitive.ObjectIDFromHex(data.ReferenceKey)
+	objRefId, _ := primitive.ObjectIDFromHex(*data.ReferenceKey)
 	docSecret := &doc.Secret{
 		EncryptedData: data.EncryptedData,
 		User: doc.SecretUser{
@@ -51,20 +53,20 @@ func (s *SecretsSVC) Create(ctx context.Context, data model.Secret) (sec model.S
 		Tags:           data.Tags,
 		CreatorEmail:   data.CreatorEmail,
 		Type:           data.Type,
-		ReferenceKey:   objRefId,
+		ReferenceKey:   &objRefId,
 		ExpiresAt:      data.ExpiresAt,
 		OrganizationID: data.OrganizationID,
 	}
 
 	err = mgm.Coll(docSecret).Create(docSecret)
 	if err != nil {
-		s.logger.WithContext(ctx).WithError(err).Error("Error while creatin secret")
+		s.logger.WithContext(ctx).WithError(err).Error("Error while creating secret")
 		err = errors.ErrUnknown
 		return
 	}
-
+	docRefKey := docSecret.ReferenceKey.Hex()
 	sec = model.Secret{
-		ID:            docSecret.ID.Hex(),
+		ID:            model.SecretID(docSecret.ID.Hex()),
 		EncryptedData: docSecret.EncryptedData,
 		CreatedAt:     docSecret.CreatedAt,
 		UpdatedAt:     docSecret.UpdatedAt,
@@ -77,7 +79,7 @@ func (s *SecretsSVC) Create(ctx context.Context, data model.Secret) (sec model.S
 		CreatorEmail:   docSecret.CreatorEmail,
 		Tags:           docSecret.Tags,
 		Type:           docSecret.Type,
-		ReferenceKey:   docSecret.ReferenceKey.Hex(),
+		ReferenceKey:   &docRefKey,
 		ExpiresAt:      docSecret.ExpiresAt,
 		OrganizationID: docSecret.OrganizationID,
 	}
@@ -187,8 +189,8 @@ func (s *SecretsSVC) GetAllSecretsforaUserInOrganization(ctx context.Context, us
 }
 
 func (s *SecretsSVC) MapDocToModelSecret(docSecret doc.Secret) model.Secret {
-	return model.Secret{
-		ID:            docSecret.ID.Hex(),
+	secretModel := model.Secret{
+		ID:            model.SecretID(docSecret.ID.Hex()),
 		EncryptedData: docSecret.EncryptedData,
 		CreatedAt:     docSecret.CreatedAt,
 		UpdatedAt:     docSecret.UpdatedAt,
@@ -201,8 +203,95 @@ func (s *SecretsSVC) MapDocToModelSecret(docSecret doc.Secret) model.Secret {
 		CreatorEmail:   docSecret.CreatorEmail,
 		Tags:           docSecret.Tags,
 		Type:           docSecret.Type,
-		ReferenceKey:   docSecret.ReferenceKey.Hex(),
 		ExpiresAt:      docSecret.ExpiresAt,
 		OrganizationID: docSecret.OrganizationID,
 	}
+
+	if docSecret.ReferenceKey != nil {
+		refKey := docSecret.ReferenceKey.Hex()
+		secretModel.ReferenceKey = &refKey
+	}
+
+	return secretModel
+}
+
+func (s *SecretsSVC) ShareSecret(c context.Context, originalID model.SecretID, endUserEmail []model.SecretUser) (resultSet map[string]bool, err error) {
+	logger := s.logger.WithContext(c).WithField("shareId", originalID.String())
+	resultSet = make(map[string]bool)
+
+	bsonId, err := primitive.ObjectIDFromHex(originalID.String())
+
+	if err != nil {
+		logger.WithError(err).Error("error while converting key to bson in secret share")
+		err = errors.ErrInvalidID
+		return
+	}
+
+	secretDoc := &doc.Secret{}
+	insertDocs := []interface{}{}
+
+	err = mgm.Coll(secretDoc).FindByID(bsonId, secretDoc)
+
+	if err != nil {
+		logger.WithError(err).Error("failed to get the doc by id")
+		err = errors.ErrSecretNotFound
+		return
+	}
+
+	// Loop over all the user emails.
+	for _, userDoc := range endUserEmail {
+
+		// Check if users exists or not.
+		_, err := s.userSvc.GetByID(c, userDoc.ID)
+
+		// If error occurs set the current index as false for processing and continue.
+		if err != nil {
+			logger.WithError(err).Error("error while fetching user data")
+			err = nil
+			resultSet[userDoc.ID.String()] = false
+			continue
+		}
+
+		refKey := secretDoc.ID
+
+		newInsertDoc := doc.Secret{
+			Description:   secretDoc.Description,
+			EncryptedData: secretDoc.EncryptedData,
+			CreatorEmail:  secretDoc.CreatorEmail,
+			ReferenceKey:  &refKey,
+			User: doc.SecretUser{
+				ID:   userDoc.ID.String(),
+				Role: userDoc.Role,
+			},
+			Tags:           secretDoc.Tags,
+			OrganizationID: secretDoc.OrganizationID,
+			ExpiresAt:      secretDoc.ExpiresAt,
+			Type:           secretDoc.Type,
+		}
+		insertDocs = append(insertDocs, newInsertDoc)
+	}
+
+	if len(insertDocs) == 0 {
+		return
+	}
+
+	_, err = mgm.Coll(secretDoc).InsertMany(c, insertDocs)
+
+	// If error is not empty then log it and reset all additions.
+	if err != nil {
+		logger.WithError(err).Error("failed to share secret among the user")
+		err = errors.ErrSecretShareFailed
+		return
+	}
+
+	// Set the non existing keys as entered.
+	for _, userDoc := range endUserEmail {
+		_, ok := resultSet[userDoc.ID.String()]
+
+		if !ok {
+			resultSet[userDoc.ID.String()] = true
+		}
+	}
+
+	return
 }

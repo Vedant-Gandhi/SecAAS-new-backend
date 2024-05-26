@@ -13,7 +13,10 @@ var (
 	ErrInvalidAsymmetricKey = errors.New("Asymmetric Key is not valid")
 	ErrInvalidSymmetricKey  = errors.New("Symmetric Key is not valid")
 
-	ErrInvalidID = errors.New("ID is not valid")
+	ErrInvalidID      = errors.New("ID is not valid")
+	ErrSecretNotFound = errors.New("Secret not found")
+
+	ErrSecretShareFailed = errors.New("secret not shared")
 
 	ErrInvalidOrganizationID = errors.New("Orgnization ID is not valid")
 )

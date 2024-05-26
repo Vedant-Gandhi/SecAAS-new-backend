@@ -172,3 +172,64 @@ func (s *SecretsController) GetForOrganization() gin.HandlerFunc {
 
 	}
 }
+
+func (s *SecretsController) ShareKey() gin.HandlerFunc {
+	return func(gCtx *gin.Context) {
+
+		var userData []model.SecretUser
+
+		err := gCtx.BindJSON(&userData)
+
+		if err != nil {
+			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
+				Code:    "data/invalid-payload",
+				Message: "Payload format is not valid",
+			})
+			s.logger.WithError(err).Error("error in decoding body in secret share")
+			return
+		}
+
+		keyId := gCtx.Param("secretId")
+
+		if keyId == "" {
+			gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
+				Code:    "secret/invalid-key",
+				Message: "Secret Key ID is not valid",
+			})
+			s.logger.WithError(err).Error("error in decoding body in secret share")
+			return
+		}
+
+		keyInsertStatus, err := s.svc.ShareSecret(gCtx.Request.Context(), model.SecretID(keyId), userData)
+
+		if err != nil {
+			if err == errors.ErrInvalidID {
+				gCtx.JSON(http.StatusBadRequest, response.ErrorResponse{
+					Code:    "data/invalid-payload",
+					Message: "Secret Key ID is not valid",
+				})
+				return
+			}
+
+			if err == errors.ErrSecretNotFound {
+				gCtx.JSON(http.StatusNotFound, response.ErrorResponse{
+					Code:    "secret/not-found",
+					Message: "Secret Key ID not found",
+				})
+				return
+			}
+
+			if err != nil {
+				gCtx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+					Code:    "server/internal-error",
+					Message: "An Internal Server error has occurred",
+				})
+				return
+			}
+
+		}
+
+		gCtx.JSON(http.StatusCreated, keyInsertStatus)
+
+	}
+}

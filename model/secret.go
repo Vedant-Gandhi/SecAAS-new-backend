@@ -7,8 +7,14 @@ type SecretUser struct {
 	Role string `json:"role"`
 }
 
+type SecretID string
+
+func (sec SecretID) String() string {
+	return string(sec)
+}
+
 type Secret struct {
-	ID             string     `json:"id"`
+	ID             SecretID   `json:"id"`
 	EncryptedData  string     `json:"encryptedData"`
 	CreatedAt      time.Time  `json:"createdAt"`
 	UpdatedAt      time.Time  `json:"updatedAt"`
@@ -18,7 +24,7 @@ type Secret struct {
 	Tags           []string   `json:"tags"`
 	CreatorEmail   string     `json:"creatorEmail"`
 	Type           string     `json:"type"`
-	ReferenceKey   string     `json:"referenceKey"`
+	ReferenceKey   *string    `json:"referenceKey"`
 	OrganizationID string     `json:"organizationId"`
 	ExpiresAt      time.Time  `json:"expiresAt,omitempty"`
 }

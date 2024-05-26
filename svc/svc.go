@@ -24,7 +24,7 @@ func New(logger *logrus.Logger, db *db.DB) *SVC {
 	u := user.New(logger)
 	i := invite.New(logger)
 	org := organization.New(logger)
-	sec := secret.New(logger)
+	sec := secret.New(logger, u)
 
 	s := &SVC{logger: logger, db: db, User: u, Invite: i, Organization: org, Secrets: sec}
 	return s

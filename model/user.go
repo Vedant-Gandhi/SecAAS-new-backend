@@ -16,7 +16,7 @@ func (e Email) String() string {
 
 type UserOrganization struct {
 	ID      string `json:"id"`
-	IsAdmin string `json:"isAdmin"`
+	IsAdmin bool   `json:"isAdmin"`
 	PvtKey  string `json:"pvtKey"`
 }
 

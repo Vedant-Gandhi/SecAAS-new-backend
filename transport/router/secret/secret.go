@@ -15,4 +15,6 @@ func Add(router *gin.RouterGroup, controller secret.SecretsController) {
 	secret.GET("/organization/:organizationId/user/:userId", controller.GetForUserOrganization())
 	secret.GET("/organization/:organizationId", controller.GetForOrganization())
 
+	secret.POST("/:secretId/share", controller.ShareKey())
+
 }
