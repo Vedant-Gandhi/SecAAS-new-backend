@@ -173,6 +173,53 @@ func (s *SecretsController) GetForOrganization() gin.HandlerFunc {
 	}
 }
 
+func (s *SecretsController) GetUsersForSecret() gin.HandlerFunc {
+	return func(gCtx *gin.Context) {
+
+		secretId := gCtx.Param("secretId")
+		orgId := gCtx.Param("organizationId")
+
+		rawPage := gCtx.Query("page")
+		rawLimit := gCtx.Query("limit")
+		page, err := strconv.Atoi(rawPage)
+
+		if err != nil || page < 0 {
+			page = 1
+		}
+
+		limit, err := strconv.Atoi(rawLimit)
+
+		if err != nil || limit < 0 || limit > 100 {
+			limit = 10
+		}
+
+		pageParams := model.PaginationParams{
+			Page:  page,
+			Limit: limit,
+			Skip:  int(math.Max(float64(page-1), 0)) * limit,
+		}
+
+		data, err := s.svc.GetAllUsersforSecretByAdmin(gCtx.Request.Context(), model.OrganizationID(orgId), secretId, pageParams)
+
+		if err != nil {
+			gCtx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Code:    "server/internal-error",
+				Message: "An Internal Server error has occurred",
+			})
+			return
+		}
+
+		resp := model.PaginationResponse{
+			CurrentPage: page,
+			Data:        data,
+			Limit:       limit,
+			NextPage:    page + 1,
+		}
+		gCtx.JSON(http.StatusOK, resp)
+
+	}
+}
+
 func (s *SecretsController) ShareKey() gin.HandlerFunc {
 	return func(gCtx *gin.Context) {
 

@@ -188,6 +188,49 @@ func (s *SecretsSVC) GetAllSecretsforaUserInOrganization(ctx context.Context, us
 	return
 }
 
+func (s *SecretsSVC) GetAllUsersforSecretByAdmin(ctx context.Context, orgId model.OrganizationID, originalKeyID string, params model.PaginationParams) (data []model.Secret, err error) {
+
+	secretDoc := &doc.Secret{}
+
+	objRefKey, _ := primitive.ObjectIDFromHex(originalKeyID)
+
+	filter := bson.M{
+		"organizationId": orgId,
+		"referenceKey":   objRefKey,
+	}
+
+	s.logger.Error(filter)
+
+	findOptions := options.Find().SetLimit(int64(params.Limit)).SetSkip(int64(params.Skip)).SetSort(bson.D{
+		{"updatedAt", 1},
+	})
+
+	cursor, err := mgm.Coll(secretDoc).Find(ctx, filter, findOptions)
+	if err != nil {
+		s.logger.WithContext(ctx).WithError(err).Error("Error while fetching users for a particular secret.")
+		err = errors.ErrUnknown
+		return
+	}
+
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var curDoc doc.Secret
+
+		err := cursor.Decode(&curDoc)
+
+		if err != nil {
+			s.logger.WithContext(ctx).WithError(err).Error("error while decoding secret document")
+			continue
+		}
+
+		modelSecret := s.MapDocToModelSecret(curDoc)
+
+		data = append(data, modelSecret)
+	}
+	return
+}
+
 func (s *SecretsSVC) MapDocToModelSecret(docSecret doc.Secret) model.Secret {
 	secretModel := model.Secret{
 		ID:            model.SecretID(docSecret.ID.Hex()),
