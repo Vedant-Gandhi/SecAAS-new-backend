@@ -12,4 +12,5 @@ func Add(router *gin.RouterGroup, controller user.UserController) {
 
 	user.GET("/by/email", controller.GetUserByEmail())
 	user.POST("/create", controller.CreateUser())
+	user.GET("/list/organization/:organizationId", controller.GetUsersForOrganization())
 }

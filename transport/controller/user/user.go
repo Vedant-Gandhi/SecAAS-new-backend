@@ -1,11 +1,13 @@
 package user
 
 import (
+	"math"
 	"net/http"
 	"secaas_backend/model"
 	"secaas_backend/svc/errors"
 	"secaas_backend/svc/user"
 	"secaas_backend/transport/controller/response"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
@@ -111,6 +113,56 @@ func (u *UserController) CreateUser() gin.HandlerFunc {
 		}
 
 		gCtx.JSON(http.StatusCreated, newUser)
+
+	}
+}
+
+func (s *UserController) GetUsersForOrganization() gin.HandlerFunc {
+	return func(gCtx *gin.Context) {
+
+		orgId := gCtx.Param("organizationId")
+
+		rawPage := gCtx.Query("page")
+		rawLimit := gCtx.Query("limit")
+		page, err := strconv.Atoi(rawPage)
+
+		if err != nil || page < 0 {
+			page = 1
+		}
+
+		limit, err := strconv.Atoi(rawLimit)
+
+		if err != nil || limit < 0 || limit > 100 {
+			limit = 10
+		}
+
+		pageParams := model.PaginationParams{
+			Page:  page,
+			Limit: limit,
+			Skip:  int(math.Max(float64(page-1), 0)) * limit,
+		}
+
+		data, err := s.svc.GetUsersByOrganization(gCtx.Request.Context(), model.OrganizationID(orgId), pageParams)
+
+		if err != nil {
+			gCtx.JSON(http.StatusInternalServerError, response.ErrorResponse{
+				Code:    "server/internal-error",
+				Message: "An Internal Server error has occurred",
+			})
+			return
+		}
+
+		resp := model.PaginationResponse{
+			CurrentPage: page,
+			Data:        data,
+			Limit:       limit,
+			NextPage:    page + 1,
+		}
+
+		if len(data) == 0 {
+			resp.Data = []model.User{}
+		}
+		gCtx.JSON(http.StatusOK, resp)
 
 	}
 }

@@ -11,6 +11,8 @@ import (
 	"github.com/sirupsen/logrus"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
+	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 type UserSVC struct {
@@ -58,6 +60,55 @@ func (u *UserSVC) GetByEmail(ctx context.Context, email model.Email) (user model
 	return
 }
 
+func (u *UserSVC) GetUsersByOrganization(ctx context.Context, orgId model.OrganizationID, params model.PaginationParams) ([]model.User, error) {
+	log := u.logger.WithContext(ctx)
+
+	if orgId == "" {
+		log.Error("invalid orgId")
+		return nil, errors.ErrInvalidID
+	}
+
+	coll := mgm.Coll(&doc.User{})
+
+	filter := bson.M{
+		"organizations.id": orgId.String(),
+	}
+
+	findOptions := options.Find().SetLimit(int64(params.Limit)).SetSkip(int64(params.Skip)).SetSort(bson.D{
+		{"updatedAt", -1},
+	})
+
+	cur, err := coll.Find(ctx, filter, findOptions)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			log.WithError(err).Error("Users not found.")
+			return nil, errors.ErrUserNotFound
+		}
+		log.WithError(err).Error("Unknown error occurred when getting list of users by organization.")
+		return nil, errors.ErrUnknown
+	}
+	defer cur.Close(ctx)
+
+	var users []model.User
+
+	for cur.Next(ctx) {
+		var userDoc doc.User
+		if err := cur.Decode(&userDoc); err != nil {
+			log.WithError(err).Error("Error decoding user document.")
+			return nil, errors.ErrUnknown
+		}
+		user := u.MapDocToUser(&userDoc)
+		users = append(users, user)
+	}
+
+	if err := cur.Err(); err != nil {
+		log.WithError(err).Error("Cursor error occurred.")
+		return nil, errors.ErrUnknown
+	}
+
+	return users, nil
+}
+
 func (u *UserSVC) CreateUser(ctx context.Context, user model.User) (data model.User, err error) {
 
 	if user.PassHash.Hash == "" || user.PassHash.Alg == "" {
@@ -87,6 +138,16 @@ func (u *UserSVC) CreateUser(ctx context.Context, user model.User) (data model.U
 		},
 		IsBlackListed: false,
 		Organization:  []doc.UserOrganization{},
+	}
+
+	if len(user.Organization) > 0 {
+		for _, org := range user.Organization {
+			docUser.Organization = append(docUser.Organization, doc.UserOrganization{
+				ID:      org.ID,
+				IsAdmin: org.IsAdmin,
+				PvtKey:  org.PvtKey,
+			})
+		}
 	}
 
 	err = mgm.Coll(docUser).CreateWithCtx(ctx, docUser)
