@@ -188,7 +188,7 @@ func (s *SecretsSVC) GetAllSecretsforaUserInOrganization(ctx context.Context, us
 	return
 }
 
-func (s *SecretsSVC) GetAllUsersforSecretByAdmin(ctx context.Context, orgId model.OrganizationID, originalKeyID string, params model.PaginationParams) (data []model.Secret, err error) {
+func (s *SecretsSVC) GetAllUsersforSecretByAdmin(ctx context.Context, orgId model.OrganizationID, originalKeyID string, params model.PaginationParams) (data []model.User, err error) {
 
 	secretDoc := &doc.Secret{}
 
@@ -224,9 +224,14 @@ func (s *SecretsSVC) GetAllUsersforSecretByAdmin(ctx context.Context, orgId mode
 			continue
 		}
 
-		modelSecret := s.MapDocToModelSecret(curDoc)
+		user, err := s.userSvc.GetByID(ctx, model.UserID(curDoc.User.ID))
 
-		data = append(data, modelSecret)
+		if err != nil {
+			s.logger.WithContext(ctx).WithError(err).Error("error while decoding user in secret document")
+			continue
+		}
+
+		data = append(data, user)
 	}
 	return
 }
