@@ -309,6 +309,7 @@ func (s *SecretsSVC) ShareSecret(c context.Context, originalID model.SecretID, e
 			Tags:           secretDoc.Tags,
 			OrganizationID: secretDoc.OrganizationID,
 			ExpiresAt:      secretDoc.ExpiresAt,
+			Name:           secretDoc.Name,
 			Type:           secretDoc.Type,
 		}
 		insertDocs = append(insertDocs, newInsertDoc)
